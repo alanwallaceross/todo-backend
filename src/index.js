@@ -1,18 +1,20 @@
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
-import { printMessage } from "./consolling";
+import todos from "./handlers/todos";
 
 const app = express();
 
 app.use(cors());
-printMessage("Hello World");
-printMessage(process.env.SECRET);
+
+const server = app.listen(process.env.PORT, () =>
+  console.info(`App is listening on port ${process.env.PORT}!`)
+);
 
 app.get("/", (req, res) => {
   res.send("Hello Alan");
 });
 
-app.listen(process.env.PORT, () =>
-  console.log(`App is listening on port ${process.env.PORT}!`)
-);
+app.use("/todos", todos);
+
+export default server;
