@@ -6,9 +6,8 @@ const pool = new Pool({
 pool.query("SELECT NOW()", (err, res) => {
   console.log(err, res);
 });
-const client = new Client({
-  connectionString,
+pool.on("error", (err, client) => {
+  console.error("Error:", err);
 });
-client.connect();
 
 export default pool;

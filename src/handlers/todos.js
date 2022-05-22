@@ -1,11 +1,12 @@
-const express = require("express");
+import express from "express";
 const router = express.Router();
-import client from "../elephantsql";
+import pool from "../elephantsql";
+import { v4 } from "uuid";
 
-router.get("/", async (req, res) => {
-  const { rows: todos } = await client.query("SELECT * FROM todos");
+async function getTodos() {
+  const { rows: todos } = await pool.query("SELECT * FROM todos");
 
-  const { rows: subtasks } = await client.query(
+  const { rows: subtasks } = await pool.query(
     'SELECT * FROM todos JOIN subtasks ON "todos".todo_id = "subtasks".todo_id'
   );
 
@@ -27,11 +28,37 @@ router.get("/", async (req, res) => {
   };
 
   const mergedTodos = mergeTodosWithSubtasks(todos, subtasks);
+  return mergedTodos;
+}
 
-  console.log("todos:", mergedTodos);
+router.get("/", async (req, res) => {
+  const todos = await getTodos();
   res.json({
-    todos: mergedTodos,
+    todos,
   });
+});
+
+router.post("/", async (req, res) => {
+  const currentTime = new Date().toUTCString();
+  const newId = v4();
+  const queryValues = [
+    newId,
+    req.body.title,
+    "pending",
+    currentTime,
+    currentTime,
+  ];
+  const queryText =
+    'INSERT INTO todos(todo_id, title, status, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5)';
+  try {
+    await pool.query(queryText, queryValues);
+  } catch (err) {
+    console.log(err.stack);
+  }
+
+  const response = await getTodos();
+  const newTodo = response.find((todo) => todo.todo_id === newId);
+  res.json(newTodo);
 });
 
 export default router;
